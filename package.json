@@ -1,0 +1,13 @@
+{
+  "name": "typeflow",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "engines": { "node": ">=22" },
+  "pnpm": { "onlyBuiltDependencies": ["esbuild"] },
+  "scripts": {
+    "dev": "pnpm --filter @typeflow/web dev",
+    "build": "pnpm --filter @typeflow/web build",
+    "preview": "pnpm --filter @typeflow/web preview",
+    "typecheck": "pnpm --filter @typeflow/web exec tsc -b"
+  }
+}

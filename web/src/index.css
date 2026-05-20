@@ -163,4 +163,21 @@ a:focus-visible {
   }
 }
 
+
+.caret-bar {
+  display: inline-block;
+  width: 2px;
+  height: 1.15em;
+  background-color: var(--accent);
+  vertical-align: text-bottom;
+  margin: 0 -1px;
+  border-radius: 1px;
+  animation: caret-blink 1.05s steps(1) infinite;
+}
+
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 } /* end @layer base */

@@ -10,7 +10,7 @@
     <meta name="darkreader-lock" />
     <link rel="manifest" href="/manifest.json" />
     <script>
-      if (matchMedia('(prefers-color-scheme: dark)').matches) {
+      if (localStorage.getItem('typeflow:theme') === 'dark') {
         document.documentElement.dataset.theme = 'dark';
       }
     </script>

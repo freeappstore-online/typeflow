@@ -1,4 +1,22 @@
-const WORDS = [
+import type { Difficulty } from './types'
+
+const EASY = [
+  'the','be','to','of','and','in','it','for','not','on',
+  'with','he','as','you','do','at','but','by','from','they',
+  'we','her','she','or','an','my','one','all','up','out',
+  'if','who','get','go','me','can','no','him','know','take',
+  'good','some','them','see','now','look','come','also','back','use',
+  'two','how','new','want','any','give','day','us','work','well',
+  'way','even','old','hand','high','time','year','face','end','mind',
+  'side','show','move','find','tell','keep','home','real','life','few',
+  'open','next','walk','food','sure','top','cut','try','long','book',
+  'eat','room','once','stop','head','run','hold','ask','hot','far',
+  'draw','left','cold','led','hit','big','red','age','arm','eye',
+  'boy','ten','set','got','let','sit','bit','car','dog','air',
+  'sea','sky','lot','job','law','war','oil','ice','box','net',
+]
+
+const NORMAL = [
   'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'it',
   'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this',
   'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or',
@@ -18,12 +36,23 @@ const WORDS = [
   'until', 'form', 'food', 'feet', 'land', 'side', 'without', 'boy', 'once', 'animal',
   'enough', 'took', 'sometimes', 'four', 'above', 'kind', 'began', 'almost', 'live', 'page',
   'door', 'sure', 'become', 'top', 'ship', 'across', 'today', 'during', 'short', 'better',
-  'best', 'cut', 'try', 'point', 'play', 'sound', 'water', 'long', 'book', 'carry',
-  'eat', 'room', 'friend', 'began', 'idea', 'fish', 'mountain', 'stop', 'face', 'watch',
-  'color', 'wood', 'main', 'open', 'seem', 'together', 'next', 'white', 'children', 'example',
-  'paper', 'group', 'always', 'music', 'those', 'both', 'mark', 'book', 'letter', 'until',
-  'mile', 'river', 'car', 'feet', 'care', 'second', 'enough', 'plain', 'girl', 'usual',
-  'young', 'ready', 'above', 'ever', 'red', 'list', 'though', 'feel', 'talk', 'bird',
+  'best', 'cut', 'try', 'point', 'sound', 'water', 'long', 'book', 'carry', 'eat',
+]
+
+const HARD = [
+  'achieve','balance','capture','develop','elegant','factory','genuine','harvest','imagine','journey',
+  'kingdom','liberty','measure','natural','observe','patient','quality','require','silence','venture',
+  'between','certain','chapter','climate','company','complex','concern','control','correct','country',
+  'culture','despite','distant','excited','failure','forward','freedom','general','healthy','history',
+  'hundred','include','instead','kitchen','machine','medical','mention','million','minutes','mistake',
+  'morning','nothing','outside','perfect','perhaps','picture','problem','quickly','reasons','regular',
+  'related','science','several','similar','special','started','strange','student','success','surface',
+  'teacher','through','tonight','trouble','usually','various','watched','whether','without','written',
+  'already','another','because','believe','brought','careful','carried','complete','contain','current',
+  'decided','evening','example','feeling','finally','foreign','further','however','increase','language',
+  'learning','leaving','machine','matter','morning','nothing','outside','perhaps','picture','possible',
+  'present','private','produce','reading','running','several','someone','special','started','students',
+  'surface','teacher','through','tonight','trouble','usually','various','watched','whether','without',
 ]
 
 function shuffle(arr: string[]): string[] {
@@ -35,10 +64,11 @@ function shuffle(arr: string[]): string[] {
   return a
 }
 
-export function generateWords(count: number): string[] {
+export function generateWords(count: number, difficulty: Difficulty = 'normal'): string[] {
+  const pool = difficulty === 'easy' ? EASY : difficulty === 'hard' ? HARD : NORMAL
   const result: string[] = []
   while (result.length < count) {
-    result.push(...shuffle(WORDS))
+    result.push(...shuffle(pool))
   }
   return result.slice(0, count)
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { TestMode, TestState, WordData, TestResult, CharState } from './types'
+import type { TestMode, TestState, WordData, TestResult, CharState, Difficulty } from './types'
 import { generateWords } from './words'
 
 const WORD_COUNT = 200
@@ -12,7 +12,7 @@ function buildWordData(words: string[]): WordData[] {
   }))
 }
 
-function computeResult(words: WordData[], wordIdx: number, mode: TestMode): TestResult {
+function computeResult(words: WordData[], wordIdx: number, mode: TestMode, difficulty: Difficulty): TestResult {
   let correct = 0
   let incorrect = 0
   for (let i = 0; i < wordIdx; i++) {
@@ -20,9 +20,8 @@ function computeResult(words: WordData[], wordIdx: number, mode: TestMode): Test
       if (c.state === 'correct') correct++
       else if (c.state === 'incorrect') incorrect++
     }
-    correct++ // space between words counts as a correct char
+    correct++ // space between words
   }
-  // partial current word
   for (const c of words[wordIdx].chars) {
     if (c.state === 'correct') correct++
     else if (c.state === 'incorrect') incorrect++
@@ -31,28 +30,28 @@ function computeResult(words: WordData[], wordIdx: number, mode: TestMode): Test
   const wpm = Math.round((correct / 5) / (mode / 60))
   const rawWpm = Math.round((total / 5) / (mode / 60))
   const accuracy = total === 0 ? 100 : Math.round((correct / total) * 100)
-  return { wpm, rawWpm, accuracy, correctChars: correct, incorrectChars: incorrect, mode }
+  return { wpm, rawWpm, accuracy, correctChars: correct, incorrectChars: incorrect, mode, difficulty }
 }
 
 export function useTypingTest() {
   const [mode, setMode] = useState<TestMode>(30)
+  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [testState, setTestState] = useState<TestState>('idle')
-  const [words, setWords] = useState<WordData[]>(() => buildWordData(generateWords(WORD_COUNT)))
+  const [words, setWords] = useState<WordData[]>(() => buildWordData(generateWords(WORD_COUNT, 'normal')))
   const [wordIdx, setWordIdx] = useState(0)
   const [currentInput, setCurrentInput] = useState('')
   const [timeLeft, setTimeLeft] = useState<number>(30)
   const [result, setResult] = useState<TestResult | null>(null)
 
-  // Refs to avoid stale closures in the timer callback
-  const stateRef = useRef({ words, wordIdx, mode, testState })
-  stateRef.current = { words, wordIdx, mode, testState }
+  const stateRef = useRef({ words, wordIdx, mode, difficulty, testState })
+  stateRef.current = { words, wordIdx, mode, difficulty, testState }
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const finish = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
-    const { words, wordIdx, mode } = stateRef.current
-    setResult(computeResult(words, wordIdx, mode))
+    const { words, wordIdx, mode, difficulty } = stateRef.current
+    setResult(computeResult(words, wordIdx, mode, difficulty))
     setTestState('finished')
   }, [])
 
@@ -60,10 +59,7 @@ export function useTypingTest() {
     if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) {
-          finish()
-          return 0
-        }
+        if (prev <= 1) { finish(); return 0 }
         return prev - 1
       })
     }, 1000)
@@ -81,7 +77,6 @@ export function useTypingTest() {
       startTimer(mode)
     }
 
-    // Space submits current word
     if (value.endsWith(' ')) {
       const typed = value.trimEnd()
       if (typed.length === 0) return
@@ -89,8 +84,7 @@ export function useTypingTest() {
       const newWords = words.map((w, i) => {
         if (i !== wordIdx) return w
         return {
-          ...w,
-          typed,
+          ...w, typed,
           chars: w.chars.map((c, ci) => ({
             ...c,
             state: (ci < typed.length
@@ -101,30 +95,21 @@ export function useTypingTest() {
       })
 
       const nextIdx = wordIdx + 1
-      if (nextIdx >= newWords.length) {
-        setWords(newWords)
-        finish()
-        return
-      }
-
+      if (nextIdx >= newWords.length) { setWords(newWords); finish(); return }
       setWords(newWords)
       setWordIdx(nextIdx)
       setCurrentInput('')
       return
     }
 
-    // Normal typing — update live char states
     const capped = value.slice(0, words[wordIdx].word.length + 8)
     const newWords = words.map((w, i) => {
       if (i !== wordIdx) return w
       return {
-        ...w,
-        typed: capped,
+        ...w, typed: capped,
         chars: w.chars.map((c, ci) => ({
           ...c,
-          state: (ci >= capped.length
-            ? 'untyped'
-            : capped[ci] === c.char ? 'correct' : 'incorrect') as CharState,
+          state: (ci >= capped.length ? 'untyped' : capped[ci] === c.char ? 'correct' : 'incorrect') as CharState,
         })),
       }
     })
@@ -135,7 +120,6 @@ export function useTypingTest() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     const { words, wordIdx } = stateRef.current
     if (e.key === 'Backspace' && stateRef.current.testState !== 'finished') {
-      // Go back to previous word if input is empty
       const input = (e.currentTarget as HTMLInputElement).value
       if (input === '' && wordIdx > 0) {
         const prevIdx = wordIdx - 1
@@ -146,9 +130,7 @@ export function useTypingTest() {
             ...w,
             chars: w.chars.map((c, ci) => ({
               ...c,
-              state: (ci >= prevTyped.length
-                ? 'untyped'
-                : prevTyped[ci] === c.char ? 'correct' : 'incorrect') as CharState,
+              state: (ci >= prevTyped.length ? 'untyped' : prevTyped[ci] === c.char ? 'correct' : 'incorrect') as CharState,
             })),
           }
         })
@@ -159,12 +141,14 @@ export function useTypingTest() {
     }
   }, [])
 
-  const reset = useCallback((newMode?: TestMode) => {
+  const reset = useCallback((newMode?: TestMode, newDifficulty?: Difficulty) => {
     if (timerRef.current) clearInterval(timerRef.current)
     const m = newMode ?? stateRef.current.mode
+    const d = newDifficulty ?? stateRef.current.difficulty
     setMode(m)
+    setDifficulty(d)
     setTimeLeft(m)
-    setWords(buildWordData(generateWords(WORD_COUNT)))
+    setWords(buildWordData(generateWords(WORD_COUNT, d)))
     setWordIdx(0)
     setCurrentInput('')
     setTestState('idle')
@@ -172,14 +156,13 @@ export function useTypingTest() {
   }, [])
 
   const changeMode = useCallback((m: TestMode) => reset(m), [reset])
+  const changeDifficulty = useCallback((d: Difficulty) => reset(undefined, d), [reset])
 
-  // Live WPM/accuracy for display during the test
   const elapsed = mode - timeLeft
   let liveWpm = 0
   let liveAccuracy = 100
   if (testState === 'running' && elapsed > 0) {
-    let correct = 0
-    let incorrect = 0
+    let correct = 0, incorrect = 0
     for (let i = 0; i < wordIdx; i++) {
       for (const c of words[i].chars) {
         if (c.state === 'correct') correct++
@@ -197,18 +180,8 @@ export function useTypingTest() {
   }
 
   return {
-    mode,
-    testState,
-    words,
-    wordIdx,
-    currentInput,
-    timeLeft,
-    result,
-    liveWpm,
-    liveAccuracy,
-    handleInput,
-    handleKeyDown,
-    reset,
-    changeMode,
+    mode, difficulty, testState, words, wordIdx, currentInput,
+    timeLeft, result, liveWpm, liveAccuracy,
+    handleInput, handleKeyDown, reset, changeMode, changeDifficulty,
   }
 }

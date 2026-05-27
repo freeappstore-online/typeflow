@@ -4,6 +4,9 @@
 
 :root {
   color-scheme: light;
+  --paper: #ffffff;
+  --ink: #1a1a1a;
+  --accent: #d86f4d;
   --accent-soft: #ffd4bf;
   --accent-deep: #9f4427;
   --sky: #4c97b5;
